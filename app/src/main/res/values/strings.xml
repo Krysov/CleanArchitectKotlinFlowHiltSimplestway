@@ -1,3 +1,18 @@
 <resources>
-    <string name="app_name">Clean Architect Kotlin Flow Hilt Simplest way</string>
+
+    <string name="placeholder_data" translatable="false">$DATA</string>
+    <string name="placeholder_error" translatable="false">$ERROR</string>
+
+    <string name="app_name">Clean Architect Kotlin Flow Hilt Simplest Way</string>
+
+    <string name="content_loading">loading..</string>
+    <string name="content_success">success: $DATA</string>
+    <string name="content_error">error: $ERROR</string>
+
+    <string name="error_connection">Connection error!</string>
+    <string name="error_no_internet">No internet access!</string>
+    <string name="error_auth">Authentication error!</string>
+    <string name="error_internal">Internal error!</string>
+    <string name="error_unexpected">Unexpected error!</string>
+
 </resources>

@@ -1,8 +1,7 @@
 package com.cleanarchitectkotlinflowhiltsimplestway.utils
 
-
 import android.content.Context
-import com.cleanarchitectkotlinflowhiltsimplestway.data.APIs
+import com.cleanarchitectkotlinflowhiltsimplestway.network.Api
 import com.cleanarchitectkotlinflowhiltsimplestway.presentation.App
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -20,80 +19,61 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
-@Suppress("unused")
 @InstallIn(SingletonComponent::class)
 class NetworkModule {
 
+    private val timeoutReadSeconds = 30
+    private val timeoutWriteSeconds = 30
+    private val timeoutConnectSeconds = 10
+    private val sizeCacheBytes = 1048576L * 10 // 10 MB
+
     @Singleton
     @Provides
-    fun provideApplication(@ApplicationContext app: Context): App {
-        return app as App
-    }
+    fun provideApplication(@ApplicationContext app: Context) = app as App
 
     @Provides
     @Singleton
-    fun provideRetrofit(client: OkHttpClient): Retrofit {
-        return Retrofit.Builder().baseUrl(Constants.BASE_URL).client(client)
+    fun provideContext(application: App): Context = application.applicationContext
+
+    @Provides
+    @Singleton
+    fun provideApi(retrofit: Retrofit): Api = retrofit.create(Api::class.java)
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(client: OkHttpClient): Retrofit =
+        Retrofit.Builder().baseUrl(Constants.baseUrl).client(client)
             .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
             .build()
-    }
-
-    private val READ_TIMEOUT = 30
-    private val WRITE_TIMEOUT = 30
-    private val CONNECTION_TIMEOUT = 10
-    private val CACHE_SIZE_BYTES = 10 * 1024 * 1024L // 10 MB
 
     @Provides
     @Singleton
     fun provideOkHttpClient(
         headerInterceptor: Interceptor,
-        cache: Cache
-    ): OkHttpClient {
-
-        val okHttpClientBuilder = OkHttpClient().newBuilder()
-        okHttpClientBuilder.connectTimeout(CONNECTION_TIMEOUT.toLong(), TimeUnit.SECONDS)
-        okHttpClientBuilder.readTimeout(READ_TIMEOUT.toLong(), TimeUnit.SECONDS)
-        okHttpClientBuilder.writeTimeout(WRITE_TIMEOUT.toLong(), TimeUnit.SECONDS)
-        okHttpClientBuilder.cache(cache)
-        okHttpClientBuilder.addInterceptor(headerInterceptor)
-
-
-        return okHttpClientBuilder.build()
-    }
-
+        cache: Cache,
+    ) = OkHttpClient().newBuilder()
+        .connectTimeout(timeoutConnectSeconds.toLong(), TimeUnit.SECONDS)
+        .readTimeout(timeoutReadSeconds.toLong(), TimeUnit.SECONDS)
+        .writeTimeout(timeoutWriteSeconds.toLong(), TimeUnit.SECONDS)
+        .cache(cache)
+        .addInterceptor(headerInterceptor)
+        .build()
 
     @Provides
     @Singleton
-    fun provideHeaderInterceptor(): Interceptor {
-        return Interceptor {
-            val requestBuilder = it.request().newBuilder()
-            //hear you can add all headers you want by calling 'requestBuilder.addHeader(name ,  value)'
-            it.proceed(requestBuilder.build())
-        }
-    }
-
-
-    @Provides
-    @Singleton
-    internal fun provideCache(context: Context): Cache {
-        val httpCacheDirectory = File(context.cacheDir.absolutePath, "HttpCache")
-        return Cache(httpCacheDirectory, CACHE_SIZE_BYTES)
-    }
-
-
-    @Provides
-    @Singleton
-    fun provideContext(application: App): Context {
-        return application.applicationContext
+    fun provideHeaderInterceptor() = Interceptor {
+        it.proceed(
+            it.request().newBuilder()
+                // call 'requestBuilder.addHeader(name, value)' to add request headers
+                .build()
+        )
     }
 
     @Provides
     @Singleton
-    fun provideApi(retrofit: Retrofit): APIs {
-        return retrofit.create(APIs::class.java)
-    }
-
-
-
+    internal fun provideCache(context: Context) = Cache(
+        directory = File(context.cacheDir.absolutePath, "HttpCache"),
+        maxSize = sizeCacheBytes,
+    )
 
 }
